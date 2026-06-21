@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>家庭风险测评 - 平安财富康养规划</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 100vh; color: #333; }
+
+.step { display: none; padding: 20px 16px 100px; max-width: 420px; margin: 0 auto; }
+.step.active { display: block; }
+
+/* 顶部进度条 */
+.progress-bar { height: 4px; background: #e0e0e0; border-radius: 2px; margin-bottom: 20px; position: relative; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #d4a574, #b8860b); border-radius: 2px; transition: width 0.3s; }
+.progress-text { text-align: center; font-size: 12px; color: #999; margin-bottom: 16px; }
+
+/* 标题区 */
+.header { text-align: center; margin-bottom: 24px; }
+.header .icon { font-size: 40px; margin-bottom: 8px; }
+.header h2 { font-size: 20px; color: #333; margin-bottom: 6px; }
+.header p { font-size: 13px; color: #888; line-height: 1.5; }
+
+/* 卡片 */
+.card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card-title { font-size: 14px; font-weight: 600; color: #555; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+
+/* 家庭成员输入 */
+.member-form { }
+.member-form input, .member-form select {
+  width: 100%; border: 1px solid #e0e0e0; border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; margin-bottom: 10px;
+  -webkit-appearance: none; appearance: none; background: #fff;
+}
+.member-form input:focus, .member-form select:focus { border-color: #d4a574; outline: none; }
+.btn-add { width: 100%; padding: 10px; background: linear-gradient(135deg, #d4a574, #b8860b); color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.btn-add:active { opacity: 0.85; }
+
+/* 成员列表 */
+.member-list { }
+.member-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; font-size: 14px; }
+.member-item .info { flex: 1; }
+.member-item .name { font-weight: 600; }
+.member-item .meta { font-size: 12px; color: #888; }
+.member-item .delete { color: #e74c3c; font-size: 18px; padding: 4px 8px; cursor: pointer; }
+.risk-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; color: #fff; }
+.risk-high { background: #e74c3c; }
+.risk-mid { background: #f39c12; }
+.risk-low { background: #27ae60; }
+
+/* 图表容器 */
+.chart-box { width: 100%; height: 260px; margin: 12px 0; position: relative; }
+.chart-box canvas { width: 100% !important; height: 100% !important; }
+
+/* 草帽图特殊样式 */
+.grass-hat-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.grass-hat-legend span { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.grass-hat-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+/* 标准普尔图 */
+.sp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.sp-cell { background: #f8f9fa; border-radius: 8px; padding: 12px; text-align: center; }
+.sp-cell .pct { font-size: 22px; font-weight: 700; }
+.sp-cell .label { font-size: 11px; color: #888; margin-top: 4px; }
+.sp-cell .desc { font-size: 10px; color: #aaa; margin-top: 4px; }
+
+/* 滑动条 */
+.slider-group { margin-bottom: 16px; }
+.slider-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.slider-label span:last-child { color: #d4a574; font-weight: 600; }
+input[type=range] { width: 100%; height: 6px; -webkit-appearance: none; appearance: none; background: #e0e0e0; border-radius: 3px; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #d4a574; cursor: pointer; }
+
+/* 诊断报告 */
+.report-section { margin-bottom: 16px; }
+.report-section h4 { font-size: 14px; margin-bottom: 8px; color: #555; }
+.risk-item { padding: 10px 12px; background: #fff5f5; border-left: 3px solid #e74c3c; border-radius: 0 8px 8px 0; margin-bottom: 8px; font-size: 13px; line-height: 1.5; }
+.risk-item.warn { background: #fff8e1; border-left-color: #f39c12; }
+.risk-item.ok { background: #f0faf0; border-left-color: #27ae60; }
+.score-badge { display: inline-block; padding: 4px 14px; border-radius: 20px; color: #fff; font-size: 14px; font-weight: 600; }
+.score-A { background: #27ae60; }
+.score-B { background: #f39c12; }
+.score-C { background: #e74c3c; }
+.score-D { background: #8b0000; }
+
+/* 按钮 */
+.btn-next { position: fixed; bottom: 0; left: 0; right: 0; padding: 14px; background: linear-gradient(135deg, #d4a574, #b8860b); color: #fff; border: none; font-size: 16px; font-weight: 600; cursor: pointer; z-index: 100; }
+.btn-next:active { opacity: 0.85; }
+.btn-next.disabled { background: #ccc; }
+
+/* 微信二维码卡片 */
+.qr-card { text-align: center; background: linear-gradient(135deg, #fff9e6, #fff3cd); border: 2px solid #d4a574; border-radius: 12px; padding: 20px; margin: 16px 0; }
+.qr-card .tip { font-size: 14px; color: #8b6914; margin-bottom: 10px; font-weight: 600; }
+.qr-card img { width: 160px; height: 160px; margin: 0 auto; display: block; border-radius: 8px; }
+
+/* 家庭结构图 */
+.family-tree { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 0; }
+.family-gen { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.family-person { width: 64px; text-align: center; }
+.family-person .avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; margin: 0 auto 4px; }
+.family-person .name { font-size: 11px; color: #555; }
+.family-person .age { font-size: 10px; color: #999; }
+.avatar-senior { background: #fce4ec; }
+.avatar-adult { background: #e3f2fd; }
+.avatar-child { background: #e8f5e9; }
+.family-connector { width: 2px; height: 16px; background: #d4a574; margin: 0 auto; }
+
+/* 动画 */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease; }
+</style>
+</head>
+<body>
+
+<!-- STEP 1: 家庭成员输入 -->
+<div class="step active" id="step1">
+  <div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div>
+  <div class="progress-text">第 1/5 步 · 家庭成员信息</div>
+  <div class="header">
+    <div class="icon">👨👩👧👦</div>
+    <h2>请填写家庭成员信息</h2>
+    <p>我们将根据每位成员的年龄和关系，<br>为您精准分析家庭风险缺口</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 添加家庭成员</div>
+    <div class="member-form" id="memberForm">
+      <input type="text" id="inputName" placeholder="称呼（如：爸爸、妈妈、小明）" maxlength="10">
+      <input type="number" id="inputAge" placeholder="年龄" min="0" max="120">
+      <select id="inputRelation">
+        <option value="">选择关系</option>
+        <option value="senior">长辈（祖父母/外祖父母）</option>
+        <option value="parent">本人/配偶（家庭支柱）</option>
+        <option value="child">子女</option>
+        <option value="other">其他亲属</option>
+      </select>
+      <button class="btn-add" onclick="addMember()">＋ 添加成员</button>
+    </div>
+  </div>
+
+  <div class="card" id="memberListCard" style="display:none">
+    <div class="card-title">✅ 已添加成员</div>
+    <div class="member-list" id="memberList"></div>
+  </div>
+
+  <div class="card" style="background:#f0faf0;border:1px solid #c8e6c9;">
+    <div style="font-size:13px;color:#2e7d32;line-height:1.6;">
+      💡 <strong>建议：</strong>至少添加3位家庭成员（如夫妻+孩子），<br>可获得更完整的家庭风险分析
+    </div>
+  </div>
+
+  <button class="btn-next" onclick="goStep(2)">查看家庭结构图 →</button>
+</div>
+
+<!-- STEP 2: 家庭结构图 + 风险标注 -->
+<div class="step" id="step2">
+  <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+  <div class="progress-text">第 2/5 步 · 家庭结构图</div>
+  <div class="header">
+    <div class="icon">🏠</div>
+    <h2>您的家庭结构</h2>
+    <p>不同年龄段家庭成员面临的风险各不相同</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗺️ 家庭结构图</div>
+    <div class="family-tree" id="familyTree"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ 各成员风险分析</div>
+    <div id="memberRiskList"></div>
+  </div>
+
+  <div class="card" style="background:#fff8e1;border:1px solid #ffe082;">
+    <div style="font-size:13px;color:#f57f17;line-height:1.6;">
+      📌 <strong>家庭支柱风险最高！</strong><br>
+      如果家庭主要收入来源发生风险，<br>整个家庭的经济来源将受到严重威胁。
+    </div>
+  </div>
+
+  <button class="btn-next" onclick="goStep(3)">查看收入支出曲线 →</button>
+</div>
+
+<!-- STEP 3: 草帽图 -->
+<div class="step" id="step3">
+  <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+  <div class="progress-text">第 3/5 步 · 收入支出曲线（草帽图）</div>
+  <div class="header">
+    <div class="icon">🎩</div>
+    <h2>您的家庭收入支出曲线</h2>
+    <p>草帽图帮您看清一生的财务走势</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📈 生命周期收入-支出曲线</div>
+    <div class="chart-box"><canvas id="grassHatChart"></canvas></div>
+    <div class="grass-hat-legend" id="grassHatLegend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔍 您的家庭当前阶段</div>
+    <div id="lifeStageAnalysis"></div>
+  </div>
+
+  <button class="btn-next" onclick="goStep(4)">查看资产配置诊断 →</button>
+</div>
+
+<!-- STEP 4: 标准普尔图 -->
+<div class="step" id="step4">
+  <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+  <div class="progress-text">第 4/5 步 · 资产配置诊断</div>
+  <div class="header">
+    <div class="icon">📊</div>
+    <h2>标准普尔家庭资产象限</h2>
+    <p>全球十万家庭验证的科学资产配置模型</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📐 您的资产配置（拖动滑块调整）</div>
+    <div class="slider-group">
+      <div class="slider-label"><span>💰 日常开销账户</span><span id="spPct1">10%</span></div>
+      <input type="range" min="0" max="100" value="10" oninput="updateSP(this,1)">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>🛡️ 杠杆保障账户</span><span id="spPct2">20%</span></div>
+      <input type="range" min="0" max="100" value="20" oninput="updateSP(this,2)">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>📈 投资收益账户</span><span id="spPct3">30%</span></div>
+      <input type="range" min="0" max="100" value="30" oninput="updateSP(this,3)">
+    </div>
+    <div class="slider-group">
+      <div class="slider-label"><span>🔒 长期理财账户</span><span id="spPct4">40%</span></div>
+      <input type="range" min="0" max="100" value="40" oninput="updateSP(this,4)">
+    </div>
+    <div style="text-align:center;font-size:12px;color:#999;margin-top:8px;" id="spTotal">合计：100%</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 标准普尔对比图</div>
+    <div class="chart-box"><canvas id="spChart"></canvas></div>
+  </div>
+
+  <div class="card" id="spDiagnosis">
+    <div class="card-title">🔎 资产配置诊断</div>
+    <div id="spDiagnosisContent"></div>
+  </div>
+
+  <button class="btn-next" onclick="generateReport()">生成风险诊断报告 →</button>
+</div>
+
+<!-- STEP 5: 诊断报告 -->
+<div class="step" id="step5">
+  <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+  <div class="progress-text">第 5/5 步 · 风险诊断报告</div>
+  <div class="header">
+    <div class="icon">📋</div>
+    <h2>您的家庭风险诊断报告</h2>
+    <p>基于您输入的信息，系统已完成综合分析</p>
+  </div>
+
+  <div class="card" style="text-align:center;padding:20px;">
+    <div style="font-size:14px;color:#999;margin-bottom:8px;">综合风险等级</div>
+    <div id="reportScore"></div>
+    <div style="font-size:13px;color:#666;margin-top:10px;line-height:1.6;" id="reportSummary"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ 风险缺口清单</div>
+    <div id="reportRisks"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💡 专属建议</div>
+    <div id="reportAdvice"></div>
+  </div>
+
+  <div class="qr-card">
+    <div class="tip">📱 扫码添加规划师，获取专属保障方案</div>
+    <img src="qrcode-wechat.jpg" alt="微信二维码">
+    <div style="font-size:12px;color:#999;margin-top:10px;">中国平安 · 财富康养保险规划师</div>
+  </div>
+
+  <div style="text-align:center;font-size:11px;color:#bbb;margin:16px 0;line-height:1.6;">
+    本测评结果仅供参考，具体保障方案请以专业规划师面对面沟通为准。<br>
+    本工具由平安保险规划师吕勇军提供
+  </div>
+
+  <button class="btn-next" onclick="shareResult()">📤 分享给家人</button>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// ============ 全局数据 ============
+let familyMembers = [];
+let spValues = [10, 20, 30, 40]; // 标准普尔四个账户百分比
+let grassHatChartInstance = null;
+let spChartInstance = null;
+
+// 风险映射表
+const RISK_MAP = {
+  child: [
+    { label: '少儿重疾风险', desc: '儿童重疾发病率逐年上升，治疗费用高昂', level: 'high' },
+    { label: '意外伤害风险', desc: '儿童活泼好动，意外事故发生率较高', level: 'mid' },
+    { label: '教育金缺口', desc: '未来教育费用持续上涨，需提前规划', level: 'mid' }
+  ],
+  parent: [
+    { label: '家庭支柱身故/重疾风险', desc: '一旦倒下，家庭收入中断，房贷车贷压力大', level: 'high' },
+    { label: '医疗通胀风险', desc: '医疗费用年均上涨8%-10%，社保报销有限', level: 'high' },
+    { label: '养老储备不足', desc: '老龄化加剧，养老金替代率仅40%左右', level: 'mid' }
+  ],
+  senior: [
+    { label: '慢性病医疗风险', desc: '老年人慢病患病率超75%，需长期用药', level: 'high' },
+    { label: '护理保障缺口', desc: '失能护理费用高昂，社保不覆盖', level: 'high' },
+    { label: '意外骨折风险', desc: '老年人骨质脆弱，意外跌倒后果严重', level: 'mid' }
+  ],
+  other: [
+    { label: '保障覆盖不足', desc: '非核心成员保障容易被忽视', level: 'mid' }
+  ]
+};
+
+// ============ STEP 1: 家庭成员管理 ============
+function addMember() {
+  const name = document.getElementById('inputName').value.trim();
+  const age = parseInt(document.getElementById('inputAge').value);
+  const relation = document.getElementById('inputRelation').value;
+  if (!name || !age || !relation) { alert('请填写完整信息'); return; }
+  if (age < 0 || age > 120) { alert('请输入有效年龄'); return; }
+  familyMembers.push({ name, age, relation, id: Date.now() });
+  document.getElementById('inputName').value = '';
+  document.getElementById('inputAge').value = '';
+  document.getElementById('inputRelation').value = '';
+  renderMemberList();
+}
+
+function removeMember(id) {
+  familyMembers = familyMembers.filter(m => m.id !== id);
+  renderMemberList();
+}
+
+function renderMemberList() {
+  const card = document.getElementById('memberListCard');
+  const list = document.getElementById('memberList');
+  if (familyMembers.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  list.innerHTML = familyMembers.map(m => {
+    const relLabel = { senior: '长辈', parent: '支柱', child: '子女', other: '其他' }[m.relation];
+    const avatarClass = { senior: 'avatar-senior', parent: 'avatar-adult', child: 'avatar-child' }[m.relation] || 'avatar-adult';
+    const emoji = { senior: '👴', parent: '🧑', child: '👶' }[m.relation] || '👤';
+    return `<div class="member-item fade-in">
+      <div class="info" style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar ${avatarClass}" style="width:36px;height:36px;font-size:16px;display:flex;align-items:center;justify-content:center;">${emoji}</div>
+        <div>
+          <div class="name">${m.name} <span style="font-size:11px;color:#999;font-weight:400;">（${relLabel}·${m.age}岁）</span></div>
+        </div>
+      </div>
+      <div class="delete" onclick="removeMember(${m.id})">✕</div>
+    </div>`;
+  }).join('');
+}
+
+// ============ 步骤切换 ============
+function goStep(n) {
+  if (n === 2 && familyMembers.length < 1) { alert('请至少添加1位家庭成员'); return; }
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  window.scrollTo(0, 0);
+  if (n === 2) renderFamilyTree();
+  if (n === 3) renderGrassHatChart();
+  if (n === 4) renderSPChart();
+}
+
+// ============ STEP 2: 家庭结构图 ============
+function renderFamilyTree() {
+  const tree = document.getElementById('familyTree');
+  // 按关系分组
+  const seniors = familyMembers.filter(m => m.relation === 'senior');
+  const parents = familyMembers.filter(m => m.relation === 'parent');
+  const children = familyMembers.filter(m => m.relation === 'child');
+  const others = familyMembers.filter(m => !['senior','parent','child'].includes(m.relation));
+
+  let html = '';
+  if (seniors.length) {
+    html += `<div class="family-gen">${seniors.map(m => personHtml(m)).join('')}</div>`;
+    html += `<div class="family-connector"></div>`;
+  }
+  if (parents.length) {
+    html += `<div class="family-gen">${parents.map(m => personHtml(m)).join('')}</div>`;
+    html += `<div class="family-connector"></div>`;
+  }
+  if (children.length) {
+    html += `<div class="family-gen">${children.map(m => personHtml(m)).join('')}</div>`;
+  }
+  if (others.length) {
+    html += `<div class="family-gen">${others.map(m => personHtml(m)).join('')}</div>`;
+  }
+  tree.innerHTML = html || '<div style="color:#999;font-size:13px;">请先添加家庭成员</div>';
+
+  // 渲染风险列表
+  const riskList = document.getElementById('memberRiskList');
+  riskList.innerHTML = familyMembers.map(m => {
+    const risks = RISK_MAP[m.relation] || RISK_MAP.other;
+    const highCount = risks.filter(r => r.level === 'high').length;
+    const tagClass = highCount >= 2 ? 'risk-high' : highCount >= 1 ? 'risk-mid' : 'risk-low';
+    const tagText = highCount >= 2 ? '高风险' : highCount >= 1 ? '中风险' : '低风险';
+    return `<div class="member-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+      <div style="display:flex;align-items:center;width:100%;justify-content:space-between;">
+        <span style="font-weight:600;">${m.name}（${m.age}岁）</span>
+        <span class="risk-tag ${tagClass}">${tagText}</span>
+      </div>
+      ${risks.map(r => `<div style="font-size:12px;color:#666;padding-left:4px;">• ${r.label}：${r.desc}</div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+function personHtml(m) {
+  const avatarClass = { senior: 'avatar-senior', parent: 'avatar-adult', child: 'avatar-child' }[m.relation] || 'avatar-adult';
+  const emoji = { senior: '👴', parent: '🧑', child: '👶' }[m.relation] || '👤';
+  return `<div class="family-person">
+    <div class="avatar ${avatarClass}">${emoji}</div>
+    <div class="name">${m.name}</div>
+    <div class="age">${m.age}岁</div>
+  </div>`;
+}
+
+// ============ STEP 3: 草帽图 ============
+function renderGrassHatChart() {
+  if (grassHatChartInstance) grassHatChartInstance.destroy();
+  const ctx = document.getElementById('grassHatChart').getContext('2d');
+
+  // 计算家庭主要收入者年龄范围
+  const parentMembers = familyMembers.filter(m => m.relation === 'parent');
+  const mainAge = parentMembers.length ? Math.min(...parentMembers.map(m => m.age)) : 35;
+  const retireAge = 60;
+  const lifeExpectancy = 85;
+  const startWork = 25;
+
+  // 生成数据
+  const labels = [];
+  const income = [];
+  const expense = [];
+  const net = [];
+
+  for (let age = startWork; age <= lifeExpectancy; age++) {
+    labels.push(age);
+    // 收入曲线：25-60岁工作期
+    if (age < retireAge) {
+      const workYears = age - startWork;
+      const peak = retireAge - startWork;
+      const incomeVal = Math.round(100 * Math.sin(workYears / peak * Math.PI * 0.8) + 30);
+      income.push(Math.max(incomeVal, 20));
+    } else {
+      income.push(0);
+    }
+    // 支出曲线：持续整个生命周期，60岁后医疗支出增加
+    let expVal = 40;
+    if (age > 65) expVal = 55;
+    else if (age > 50) expVal = 50;
+    else if (age < 30) expVal = 35;
+    expense.push(expVal);
+    // 结余
+    net.push(income[income.length - 1] - expVal);
+  }
+
+  grassHatChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: '收入', data: income, borderColor: '#27ae60', backgroundColor: 'rgba(39,174,96,0.1)', fill: true, tension: 0.4 },
+        { label: '支出', data: expense, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.4 },
+        { label: '结余', data: net, borderColor: '#d4a574', borderDash: [5,5], tension: 0.4, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        annotation: undefined
+      },
+      scales: {
+        x: { title: { display: true, text: '年龄', font: { size: 11 } }, ticks: { font: { size: 9 }, maxTicksLimit: 10 } },
+        y: { title: { display: true, text: '金额（万元）', font: { size: 11 } }, ticks: { font: { size: 9 } }, min: -20 }
+      }
+    }
+  });
+
+  // 生命周期分析
+  const stageDiv = document.getElementById('lifeStageAnalysis');
+  let stage = '';
+  let stageAdvice = '';
+  if (mainAge < 30) { stage = '🐣 成长期'; stageAdvice = '事业刚起步，收入较低但负担轻，应优先配置意外险和医疗险，保费低、杠杆高。'; }
+  else if (mainAge < 45) { stage = '🏃 奋斗期'; stageAdvice = '收入上升期，但家庭责任最重（房贷、子女教育、父母赡养）。此阶段风险缺口最大，必须重点配置重疾险、定期寿险和医疗险。'; }
+  else if (mainAge < 60) { stage = '🏔️ 高压期'; stageAdvice = '收入高峰期，但身体机能下降，重疾风险上升。临近退休，需加速储备养老金，同时查漏补缺保障。'; }
+  else { stage = '🌅 退休期'; stageAdvice = '收入中断，医疗支出增加。重点防范大病风险和护理风险，确保养老金充足。'; }
+
+  // 计算子女教育负担
+  const kidAges = familyMembers.filter(m => m.relation === 'child').map(m => m.age);
+  let eduBurden = '';
+  if (kidAges.length) {
+    const upcoming = kidAges.filter(a => a >= 3 && a <= 18);
+    if (upcoming.length) eduBurden = `<div style="margin-top:8px;padding:8px;background:#fff3e0;border-radius:8px;font-size:13px;color:#e65100;">📚 您有${upcoming.length}个孩子正处于教育关键期（3-18岁），未来10年教育支出将大幅增加，请提前储备教育金。</div>`;
+  }
+
+  stageDiv.innerHTML = `<div style="font-size:16px;font-weight:600;color:#d4a574;margin-bottom:8px;">${stage}</div>
+    <div style="font-size:13px;color:#666;line-height:1.6;">${stageAdvice}</div>
+    ${eduBurden}`;
+}
+
+// ============ STEP 4: 标准普尔图 ============
+function updateSP(slider, idx) {
+  spValues[idx - 1] = parseInt(slider.value);
+  document.getElementById('spPct' + idx).textContent = spValues[idx - 1] + '%';
+  // 更新总计
+  const total = spValues.reduce((a, b) => a + b, 0);
+  const totalEl = document.getElementById('spTotal');
+  totalEl.textContent = '合计：' + total + '%';
+  totalEl.style.color = total === 100 ? '#27ae60' : '#e74c3c';
+  renderSPChart();
+}
+
+function renderSPChart() {
+  if (spChartInstance) spChartInstance.destroy();
+  const ctx = document.getElementById('spChart').getContext('2d');
+  const labels = ['日常开销\n（建议10%）', '杠杆保障\n（建议20%）', '投资收益\n（建议30%）', '长期理财\n（建议40%）'];
+  const suggested = [10, 20, 30, 40];
+  const colors = ['#42a5f5', '#66bb6a', '#ffa726', '#ab47bc'];
+
+  spChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '您的配置', data: [...spValues], backgroundColor: colors.map(c => c + '99'), borderColor: colors, borderWidth: 2 },
+        { label: '标准配置', data: suggested, backgroundColor: 'rgba(0,0,0,0.05)', borderColor: '#999', borderWidth: 1, borderDash: [5,5] }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+      },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { font: { size: 10 }, callback: v => v + '%' }, title: { display: true, text: '占比', font: { size: 11 } } },
+        x: { ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+
+  // 诊断
+  const diag = document.getElementById('spDiagnosisContent');
+  let items = '';
+  const names = ['日常开销', '杠杆保障', '投资收益', '长期理财'];
+  const suggestions = ['保留3-6个月生活费即可，过多闲置浪费', '保障账户是家庭防火墙，建议≥20%，不足将暴露重大风险', '用闲钱投资，追求收益，建议≤30%', '养老金、教育金等长期稳定配置，建议≥40%'];
+  spValues.forEach((v, i) => {
+    const diff = v - suggested[i];
+    const status = Math.abs(diff) <= 5 ? 'ok' : diff < -10 ? 'risk' : diff > 10 ? 'warn' : 'ok';
+    const icon = status === 'ok' ? '✅' : status === 'risk' ? '⚠️' : '📈';
+    items += `<div class="risk-item ${status === 'risk' ? '' : status === 'warn' ? 'warn' : 'ok'}">
+      ${icon} <strong>${names[i]}</strong>：您配置 ${v}%，标准 ${suggested[i]}%
+      <div style="font-size:11px;color:#888;margin-top:4px;">${suggestions[i]}</div>
+    </div>`;
+  });
+  // 特别提示保障账户
+  if (spValues[1] < 15) {
+    items = `<div class="risk-item" style="background:#ffebee;border-left-color:#c62828;">
+      🚨 <strong>严重风险警示！</strong>您的保障账户仅 ${spValues[1]}%，远低于标准20%。这意味着家庭缺乏风险屏障，一旦发生重疾或意外，将直接消耗储蓄甚至负债。
+    </div>` + items;
+  }
+  diag.innerHTML = items;
+}
+
+// ============ STEP 5: 生成报告 ============
+function generateReport() {
+  goStep(5);
+
+  // 计算综合评分
+  let riskScore = 0;
+  let maxScore = 0;
+  familyMembers.forEach(m => {
+    const risks = RISK_MAP[m.relation] || [];
+    risks.forEach(r => {
+      maxScore += 3;
+      if (r.level === 'high') riskScore += 3;
+      else if (r.level === 'mid') riskScore += 2;
+    });
+  });
+  // 保障账户不足加分
+  if (spValues[1] < 15) riskScore += 5;
+  const ratio = riskScore / (maxScore + 5);
+  let grade, gradeClass, summary;
+  if (ratio >= 0.7) { grade = 'D'; gradeClass = 'score-D'; summary = '您的家庭存在多处重大风险缺口，建议立即采取保障措施，优先补充保障账户。'; }
+  else if (ratio >= 0.45) { grade = 'C'; gradeClass = 'score-C'; summary = '您的家庭风险敞口较大，部分关键保障缺失，建议尽快完善家庭保障体系。'; }
+  else if (ratio >= 0.25) { grade = 'B'; gradeClass = 'score-B'; summary = '您的家庭有一定风险保障，但仍有部分缺口需要补充，建议定期检视调整。'; }
+  else { grade = 'A'; gradeClass = 'score-A'; summary = '您的家庭风险保障较为完善，建议持续关注家庭成员变化，及时更新保障方案。'; }
+
+  document.getElementById('reportScore').innerHTML = `<span class="score-badge ${gradeClass}" style="font-size:28px;padding:8px 24px;">${grade} 级</span>`;
+  document.getElementById('reportSummary').textContent = summary;
+
+  // 风险清单
+  let riskHtml = '';
+  familyMembers.forEach(m => {
+    const risks = RISK_MAP[m.relation] || [];
+    risks.forEach(r => {
+      riskHtml += `<div class="risk-item ${r.level === 'high' ? '' : 'warn'}">
+        <strong>${m.name}（${m.age}岁）</strong> · ${r.label}<br>
+        <span style="font-size:11px;color:#888;">${r.desc}</span>
+      </div>`;
+    });
+  });
+  // 保障账户不足
+  if (spValues[1] < 20) {
+    riskHtml = `<div class="risk-item">
+      <strong>家庭整体</strong> · 保障账户配置不足（${spValues[1]}% < 20%）<br>
+      <span style="font-size:11px;color:#888;">标准普尔建议保障账户占家庭资产20%，您当前配置偏低，建议尽快补充重疾险、医疗险、定期寿险。</span>
+    </div>` + riskHtml;
+  }
+  document.getElementById('reportRisks').innerHTML = riskHtml;
+
+  // 建议
+  let adviceHtml = '';
+  // 按成员类型给建议
+  const hasParent = familyMembers.some(m => m.relation === 'parent');
+  const hasChild = familyMembers.some(m => m.relation === 'child');
+  const hasSenior = familyMembers.some(m => m.relation === 'senior');
+  if (hasParent) adviceHtml += `<div class="risk-item warn">🛡️ <strong>家庭支柱</strong>：建议配置「重疾险+定期寿险+百万医疗险」，保额建议覆盖5-10年年收入。</div>`;
+  if (hasChild) adviceHtml += `<div class="risk-item warn">👶 <strong>子女保障</strong>：建议配置「少儿重疾险+意外险+教育金储备」，从小建立保障，保费更低。</div>`;
+  if (hasSenior) adviceHtml += `<div class="risk-item">👴 <strong>长辈保障</strong>：重点关注「百万医疗险/防癌险+意外险」，老年人投保受限，建议尽快配置。</div>`;
+  adviceHtml += `<div class="risk-item ok">📞 <strong>下一步行动</strong>：扫码添加平安保险规划师，获取针对您家庭情况的一对一保障方案建议。</div>`;
+  document.getElementById('reportAdvice').innerHTML = adviceHtml;
+}
+
+// ============ 分享 ============
+function shareResult() {
+  if (navigator.share) {
+    navigator.share({ title: '家庭风险测评报告', text: '我的家庭风险测评完成啦，来看看结果！', url: location.href });
+  } else {
+    alert('请截图保存报告，分享给家人');
+  }
+}
+</script>
+</body>
+</html>
