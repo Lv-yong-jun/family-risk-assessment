@@ -142,9 +142,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .insurance-check .ic-body{display:none;margin-top:8px}
 .insurance-check .ic-body.show{display:block}
 .ic-row{display:flex;flex-wrap:wrap;gap:6px}
-.ic-chk{display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid #ddd;border-radius:16px;font-size:12px;color:#666;cursor:pointer;user-select:none;background:#fff}
+.ic-chk{display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid #ddd;border-radius:16px;font-size:12px;color:#666;cursor:pointer;user-select:none;background:#fff;touch-action:manipulation;-webkit-tap-highlight-color:transparent;appearance:none;-webkit-appearance:none}
 .ic-chk.sel{border-color:#667eea;background:#eef2ff;color:#3949ab;font-weight:600}
-/* .ic-chk input{display:none} */
+.ic-chk input[type=checkbox]{display:none}
+.ic-label{display:inline-flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid #ddd;border-radius:16px;font-size:12px;color:#666;cursor:pointer;user-select:none;background:#fff;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .15s}
+.ic-label:has(input:checked){border-color:#667eea;background:#eef2ff;color:#3949ab;font-weight:600}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .fade-in{animation:fadeIn .3s ease}
@@ -177,7 +179,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
       <!-- 新增：已有保障勾选 -->
       <div class="insurance-check" id="insCheckArea">
-        <div class="ic-header" onclick="toggleInsCheck()">
+        <div class="ic-header" id="insToggle" onclick="toggleInsCheck()">
           <span>🛡️ 已有保障（选填，可多选）</span>
           <span id="insArrow">▸</span>
         </div>
@@ -408,16 +410,13 @@ var BRIDGE_TEXTS = [
 // ============ 已有保障勾选初始化 ============
 (function initInsCheck() {
   var container = document.getElementById('insOptions');
-  INS_OPTIONS.forEach(function(opt) {
-    var el = document.createElement('div');
-    el.className = 'ic-chk';
-    el.textContent = opt;
-    el.dataset.v = opt;
-    el.addEventListener('click', function(e) {
-      e.stopPropagation();
-      this.classList.toggle('sel');
-    });
-    container.appendChild(el);
+  INS_OPTIONS.forEach(function(opt, i) {
+    var id = 'ins_' + i;
+    var label = document.createElement('label');
+    label.className = 'ic-label';
+    label.htmlFor = id;
+    label.innerHTML = '<input type="checkbox" id="' + id + '" value="' + opt + '">' + opt;
+    container.appendChild(label);
   });
 })();
 
@@ -430,8 +429,8 @@ function toggleInsCheck() {
 
 function getSelectedInsurances() {
   var checked = [];
-  document.querySelectorAll('#insOptions .ic-chk.sel').forEach(function(el) {
-    checked.push(el.dataset.v);
+  document.querySelectorAll('#insOptions input:checked').forEach(function(el) {
+    checked.push(el.value);
   });
   return checked;
 }
@@ -448,7 +447,7 @@ function addMember() {
   document.getElementById('inputName').value = '';
   document.getElementById('inputAge').value = '';
   document.getElementById('inputRelation').value = '';
-  document.querySelectorAll('#insOptions .ic-chk').forEach(function(el) { el.classList.remove('sel'); });
+  document.querySelectorAll('#insOptions input').forEach(function(el) { el.checked = false; });
   renderMemberList();
 }
 
